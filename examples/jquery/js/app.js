@@ -27,20 +27,12 @@ jQuery(function ($) {
 		},
 		pluralize: function (count, word) {
 			return count === 1 ? word : word + 's';
-		},
-		store: function (namespace, data) {
-			if (arguments.length > 1) {
-				return localStorage.setItem(namespace, JSON.stringify(data));
-			} else {
-				var store = localStorage.getItem(namespace);
-				return (store && JSON.parse(store)) || [];
-			}
 		}
 	};
 
 	var App = {
 		init: function () {
-			this.todos = util.store('todos-jquery');
+			this.todos = this.store('todos-jquery');
 			this.todoTemplate = Handlebars.compile($('#todo-template').html());
 			this.footerTemplate = Handlebars.compile($('#footer-template').html());
 			this.bindEvents();
@@ -63,14 +55,21 @@ jQuery(function ($) {
 				.on('focusout', '.edit', this.update.bind(this))
 				.on('click', '.destroy', this.destroy.bind(this));
 		},
+		store: function (namespace, data) {
+			if (arguments.length > 1) {																											// if the call includes a namespace AND data, this is a set request
+				return localStorage.setItem(namespace, JSON.stringify(data));									// store the data in local storage with the requested name
+			} else {																																				
+				var store = localStorage.getItem(namespace);																	// if it only includes a namespace, this is a get request																			
+				return (store && JSON.parse(store)) || [];																		// grab and return the data stored in that namespace
+			}
+		},
 		render: function () {
-			var todos = this.getFilteredTodos();
-			$('#todo-list').html(this.todoTemplate(todos));
-			$('#main').toggle(todos.length > 0);
-			$('#toggle-all').prop('checked', this.getActiveTodos().length === 0);
-			this.renderFooter();
-			$('#new-todo').focus();
-			util.store('todos-jquery', this.todos);
+			var todos = this.getFilteredTodos();																						// determine which filter is selected ('active', 'completed'), store that list in "todos"
+			$('#todo-list').html(this.todoTemplate(todos));																	// pass that list into the handlebars "todo template", and set that as the html content for #todo-list element
+			$('#main').toggle(todos.length > 0);																						// if there is at least 1 todo, make the todo list visible (toggle #main on)
+			$('#toggle-all').prop('checked', this.getActiveTodos().length === 0);						// if there are no active todos, set the #toggle-all checkbox to checked
+			this.renderFooter();																														// render the footer
+			$('#new-todo').focus();																													// place cursor focus on the text entry box (#new-todo element)												
 		},
 		renderFooter: function () {
 			var todoCount = this.todos.length;
@@ -92,6 +91,7 @@ jQuery(function ($) {
 			});
 
 			this.render();
+			this.store('todos-jquery',this.todos);
 		},
 		getActiveTodos: function () {
 			return this.todos.filter(function (todo) {
@@ -118,6 +118,7 @@ jQuery(function ($) {
 			this.todos = this.getActiveTodos();
 			this.filter = 'all';
 			this.render();
+			this.store('todos-jquery',this.todos);
 		},
 		// accepts an element from inside the `.item` div and
 		// returns the corresponding index in the `todos` array
@@ -149,11 +150,13 @@ jQuery(function ($) {
 			$input.val('');
 
 			this.render();
+			this.store('todos-jquery',this.todos);
 		},
 		toggle: function (e) {
 			var i = this.indexFromEl(e.target);
 			this.todos[i].completed = !this.todos[i].completed;
 			this.render();
+			this.store('todos-jquery',this.todos);
 		},
 		edit: function (e) {
 			var $input = $(e.target).closest('li').addClass('editing').find('.edit');
@@ -185,10 +188,12 @@ jQuery(function ($) {
 			}
 
 			this.render();
+			this.store('todos-jquery',this.todos);
 		},
 		destroy: function (e) {
 			this.todos.splice(this.indexFromEl(e.target), 1);
 			this.render();
+			this.store('todos-jquery',this.todos);
 		}
 	};
 
